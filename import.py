@@ -1,3 +1,4 @@
+from turtle import width
 from executing import Source
 import pylightxl as xl
 import platform
@@ -5,7 +6,7 @@ import lib.csvutil as csvutil
 import lib.stringutil as stringutil
 import os
 import time
-import uuid
+import pyyed
 
 def main():
 
@@ -15,12 +16,22 @@ def main():
         MAIN_FOLDER ="C:/Users/MOREAUCL/Documents/importVIPHierarchy"
 
     IMPORTED_FILE = 'VIP - Exigences - Offre Outil Cible.xlsx'
+    YEDFILE = 'VIP.graphml'
     INPUT = MAIN_FOLDER + os.path.sep + IMPORTED_FILE
     ELEMENTTYPE = 'Grouping'
     RELATIONTYPE = 'CompositionRelationship'
     KEY = 'import'
     VALUE = 'VIP'
-
+    L1FONTSTYLE = "bold"
+    L1FONTSIZE = "14"
+    L2FONTSTYLE = "plain"
+    L2FONTSIZE = "13"
+    L3FONTSTYLE = "plain"
+    L3FONTSIZE = "12"
+    WIDTH='200'
+    L1COLOR="#DE1FF2"
+    L2COLOR="#07F2B8"
+    L3COLOR="#F2BE1F"
 
     try:
         os.mkdir(MAIN_FOLDER)
@@ -57,6 +68,8 @@ def main():
     colPriority = db.ws(ws='Exigences-besoins').col(col=14)
 
     l_alreadyAdded = []
+    g = pyyed.Graph()
+    g.define_custom_property("node", "UseCase", "string", "")
 
     for items in zip(colId, colCategory, colPerimeter, colthematic, colgroup, colUseCase, colDescription, colPriority):
 #                      0       1            2               3          4         5             6              7
@@ -112,6 +125,9 @@ def main():
 
                     toWrite = csvutil.initProperties(ID=Level1ID, Key=KEY, Value=VALUE)
                     outputfiles[3].writerow(toWrite)
+
+                    g.add_node(Level1ID, label=Name, font_size=L1FONTSIZE, font_style=L1FONTSTYLE, width=WIDTH, shape_fill=L1COLOR)
+
                 
                 #Level2 ###############################################################
                 if Level2ID not in l_alreadyAdded:
@@ -134,6 +150,10 @@ def main():
 
                     toWrite = csvutil.initRelations(ID=Level2ID, Type=RELATIONTYPE, Source=Level1ID, Target=Level2ID)
                     outputfiles[5].writerow(toWrite)
+
+                    g.add_node(Level2ID, label=Name, font_size=L2FONTSIZE, font_style=L2FONTSTYLE, width=WIDTH, shape_fill=L2COLOR)
+                    g.add_edge(Level1ID, Level2ID)
+
 
                 #Level 3 ##############################################################
                 if Level3ID not in l_alreadyAdded:
@@ -172,6 +192,14 @@ def main():
 
                     toWrite = csvutil.initRelations(ID=Level3ID, Type=RELATIONTYPE, Source=Level2ID, Target=Level3ID)
                     outputfiles[5].writerow(toWrite)
+
+                    g.add_node(Level3ID, label=Name, font_size=L3FONTSIZE, font_style=L3FONTSTYLE, width=WIDTH, shape_fill=L3COLOR,
+                               custom_properties={"UseCase": Doc1})
+                    g.add_edge(Level2ID, Level3ID)
+                    # g.add_node(Level3ID+'B', label=items[5]+items[6], font_size=L3FONTSIZE, font_style=L3FONTSTYLE)
+                    # g.add_edge(Level3ID, Level3ID+'B', label="use case is")
+            
+                    g.write_graph(MAIN_FOLDER + os.path.sep + YEDFILE, pretty_print=True)
 
 
 if __name__ == '__main__':
